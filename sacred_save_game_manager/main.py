@@ -3,27 +3,12 @@ import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, messagebox
 import json
 import os
-from typing import NotRequired, TypedDict
 
-
-GameData = TypedDict(
-    "GameData",
-    {
-        "name": str,
-        "path": str,
-        "save": NotRequired[str],
-        "save_backup": NotRequired[str],
-        "valid": NotRequired[bool],
-    },
-)
+from .controllers import ConfigManager, GameManager, SaveManager
+from .models import GameData
 
 
 class App:
-    CONFIG_FILE = (
-        "sacred_save_game_manager/config.json"
-        if pathlib.Path("sacred_save_game_manager").is_dir()
-        else "config.json"
-    )
     SAVE_DIR = "save"
     BACKUP_SAVE_DIR = "save_backup"
 
@@ -31,28 +16,28 @@ class App:
         self.root = root
         self.root.title("Sacred Gold Path Manager")
 
-        self.config = self.load_config()
+        # Initialize managers
+        self.config_manager = ConfigManager()
+        self.game_manager = GameManager(self.config_manager)
+        self.save_manager = SaveManager(self.config_manager)
+        
+        # Load configuration and initialize UI
+        self.config = self.config_manager.load_config()
         self.load_style()
 
         self.create_main_window()
         self.selected_frame = None
 
-    # === Configuration ===
+    # === Configuration (delegated to ConfigManager) ===
 
     def save_config(self):
-        self.config["save_dirs"].sort()
-        with open(self.CONFIG_FILE, "w") as f:
-            json.dump(self.config, f, indent=4)
-        return
+        """Save current configuration."""
+        self.config_manager.save_config(self.config)
 
     def load_config(self):
-        if not os.path.exists(self.CONFIG_FILE):
-            with open(self.CONFIG_FILE, "w") as f:
-                json.dump({"games": [], "save_dirs": []}, f, indent=4)
-        with open(self.CONFIG_FILE, "r") as f:
-            config = json.load(f)
-            config["save_dirs"].sort()
-            return config
+        """Load configuration from file."""
+        self.config = self.config_manager.load_config()
+        return self.config
 
     # === Custom Styles ===
 
@@ -184,10 +169,10 @@ class App:
         return
 
     def create_game_tab_games(self, parent: ttk.Widget):
-        self.config["games"] = [
-            self.validate_game_directory(game=game) for game in self.config["games"]
-        ]
-        self.save_config()
+        # Validate all games using GameManager
+        self.game_manager.validate_all_games()
+        self.config = self.config_manager.get_config()  # Refresh config
+        
         for game in self.config["games"]:
             self.create_game_tab_game_frame(parent=parent, game=game)
         return
@@ -213,7 +198,7 @@ class App:
         save_dir_label.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
         save_dir_path = ttk.Label(
             game_frame,
-            text=self.get_game_symlink_target(game=game),
+            text=self.game_manager.get_game_symlink_target(game=game),
             name="save_dir_path",
             style="GameFrame.Path.TLabel",
         )
@@ -225,17 +210,6 @@ class App:
             self._add_hover_handler(widget=game_frame, frame=game_frame, game=game)
         self._add_scroll_handler(widget=game_frame)
         return
-
-    def get_game_symlink_target(self, game: GameData):
-        game = self.validate_game_directory(game=game)
-        if game["valid"]:
-            target_path = pathlib.Path(game["save"]).resolve()
-            if target_path == pathlib.Path(game["save_backup"]):
-                return "default"
-            else:
-                return str(target_path)
-        else:
-            return "invalid"
 
     def _add_selection_handler(
         self, widget: ttk.Widget, frame: ttk.Widget, game: GameData
@@ -337,21 +311,23 @@ class App:
     def add_game_handler(self) -> None:
         selected_path = filedialog.askdirectory(title="Select Sacred Gold installation")
         if selected_path:
-            if os.path.islink(selected_path):
-                messagebox.showerror(
-                    "Invalid Directory", "Symbolic links are not supported."
-                )
+            # Use GameManager for validation
+            if not self.game_manager.is_valid_game_directory(selected_path):
+                if os.path.islink(selected_path):
+                    messagebox.showerror(
+                        "Invalid Directory", "Symbolic links are not supported."
+                    )
+                elif not os.path.isdir(selected_path):
+                    messagebox.showerror(
+                        "Invalid Directory", "Selected path is not a directory."
+                    )
+                else:
+                    messagebox.showerror(
+                        "Invalid Directory", "Sacred.exe not found in selected directory."
+                    )
                 return
-            if not os.path.isdir(selected_path):
-                messagebox.showerror(
-                    "Invalid Directory", "Selected path is not a directory."
-                )
-                return
-            if not os.path.isfile(os.path.join(selected_path, "Sacred.exe")):
-                messagebox.showerror(
-                    "Invalid Directory", "Sacred.exe not found in selected directory."
-                )
-                return
+            
+            # Check if game already exists
             for game in self.config["games"]:
                 if game["path"] == selected_path:
                     messagebox.showinfo(
@@ -365,80 +341,20 @@ class App:
             )
             if not name:
                 name = "Sacred Gold"
+            
             game = {"name": name, "path": selected_path}
-            game = self.validate_game_directory(game=game)
+            game = self.game_manager.validate_game_directory(game=game)
             if game["valid"]:
                 self.create_game_tab_game_frame(parent=self.scrollable_frame, game=game)
-                self.config["games"].append(game)
-                self.save_config()
+                self.config_manager.add_game(game)
+                self.config = self.config_manager.get_config()  # Refresh config
         return
-
-    def validate_game_directory(self, game: GameData) -> GameData:
-        game["valid"] = False
-        save_dir = self._match_target_in_directory(
-            directory=game["path"], target=App.SAVE_DIR, case_insensitive=True
-        ) or pathlib.Path(game["path"], App.SAVE_DIR)
-        backup_save_dir = self._match_target_in_directory(
-            directory=game["path"], target=App.BACKUP_SAVE_DIR, case_insensitive=True
-        ) or pathlib.Path(game["path"], App.BACKUP_SAVE_DIR)
-        # The save directory either does not exist or it is a directory/symlink to a directory.
-        if save_dir.exists(follow_symlinks=False):
-            if not save_dir.is_symlink() and not save_dir.is_dir(follow_symlinks=True):
-                messagebox.showerror(
-                    "Unexpected Error", f"{save_dir} is not a directory."
-                )
-                return game
-        # The backup save directory either does not exist or it is a directory.
-        if backup_save_dir.exists(follow_symlinks=False) and not backup_save_dir.is_dir(
-            follow_symlinks=False
-        ):
-            messagebox.showerror(
-                "Unexpected Error", f"{backup_save_dir} is not a directory."
-            )
-            return game
-        # Fail when there already is a backup save directory and the save directory is a non-empty directory.
-        if (
-            backup_save_dir.exists(follow_symlinks=False)
-            and save_dir.exists(follow_symlinks=False)
-            and save_dir.is_dir(follow_symlinks=False)
-        ):
-            if len(list(save_dir.iterdir())) > 0:
-                messagebox.showerror("Unexpected Error", f"{save_dir} is not empty.")
-                return game
-            else:
-                # Remove the save directory, so that it can be replaced by a symlink.
-                save_dir.rmdir()
-        # Create the backup save directory when it does not exist. Transfer content of save directory when it is not a symlink.
-        if not backup_save_dir.exists(follow_symlinks=False):
-            if not save_dir.exists(follow_symlinks=False) or save_dir.is_symlink():
-                backup_save_dir.mkdir(parents=False, exist_ok=True)
-            else:
-                save_dir.replace(target=backup_save_dir)
-        # Create the save directory symlink when it does not exist.
-        if not save_dir.exists(follow_symlinks=False):
-            save_dir.symlink_to(target=backup_save_dir, target_is_directory=True)
-        # Update & return
-        game["save"] = str(save_dir)
-        game["save_backup"] = str(backup_save_dir)
-        game["valid"] = True
-        return game
-
-    def _match_target_in_directory(
-        self, directory: str, target: str, case_insensitive: bool = True
-    ) -> pathlib.Path | None:
-        target = target.casefold() if case_insensitive else target
-        for item in pathlib.Path(directory).rglob("*"):
-            if (case_insensitive and item.name.casefold() == target) or (
-                not case_insensitive and item.name == target
-            ):
-                return item
-        return None
 
     def reset_game_handler(self):
         if self.selected_frame:
             frame, game = self.selected_frame
-            game = self.validate_game_directory(game=game)
-            if game["valid"] and self.rebind_symlink(
+            game = self.game_manager.validate_game_directory(game=game)
+            if game["valid"] and self.game_manager.rebind_symlink(
                 link=pathlib.Path(game["save"]),
                 target=pathlib.Path(game["save_backup"]),
             ):
@@ -450,29 +366,18 @@ class App:
                 "No Game Selected", "Please select a Sacred Gold entry to reset."
             )
 
-    def rebind_symlink(self, link: pathlib.Path, target: pathlib.Path) -> bool:
-        assert target.exists(follow_symlinks=False) and target.is_dir()
-        try:
-            if link.exists(follow_symlinks=False):
-                assert link.is_symlink()
-                link.unlink(missing_ok=True)
-            link.symlink_to(target=target, target_is_directory=True)
-            return True
-        except OSError as e:
-            messagebox.showerror("Error", f"Failed to rebind symlink: {e}")
-        return False
-
     def remove_game_handler(self) -> None:
         if self.selected_frame:
             frame, game = self.selected_frame
+            # Fix the bug: use 'name' instead of 'Bottlename'
             if messagebox.askyesno(
                 "Remove Game",
-                f"Are you sure you want to remove '{game['Bottlename']}'?",
+                f"Are you sure you want to remove '{game['name']}'?",
             ):
                 self.selected_frame = None
                 frame.destroy()
-                self.config["games"].remove(game)
-                self.save_config()
+                self.config_manager.remove_game(game)
+                self.config = self.config_manager.get_config()  # Refresh config
         else:
             messagebox.showinfo(
                 "No Game Selected", "Please select a Sacred Gold entry to remove."
@@ -595,16 +500,16 @@ class App:
                 "Add recursively",
                 f"Do you want to recursively add every terminal directories contained in {selected_path}?",
             )
-            if add_recursively:
-                for root, dirs, _ in os.walk(selected_path):
-                    if not dirs:
-                        if root not in self.config["save_dirs"]:
-                            self.config["save_dirs"].append(root)
-                            listbox.insert(tk.END, root)
-            elif selected_path not in self.config["save_dirs"]:
-                self.config["save_dirs"].append(selected_path)
-                listbox.insert(tk.END, selected_path)
-            self.save_config()
+            
+            # Use SaveManager to add directories
+            new_dirs = self.save_manager.add_save_directory(selected_path, recursive=add_recursively)
+            
+            # Update UI
+            for new_dir in new_dirs:
+                listbox.insert(tk.END, new_dir)
+            
+            # Refresh config
+            self.config = self.config_manager.get_config()
         return
 
     def remove_save_dir_handler(self):
@@ -618,12 +523,19 @@ class App:
                 )
                 if not confirm:
                     return
+                
+                # Get paths to remove
+                paths_to_remove = []
                 for index in reversed(selected):
                     path = listbox.get(index)
-                    if path in self.config["save_dirs"]:
-                        self.config["save_dirs"].remove(path)
+                    paths_to_remove.append(path)
                     listbox.delete(index)
-                self.save_config()
+                
+                # Use SaveManager to remove directories
+                self.save_manager.remove_save_directories(paths_to_remove)
+                
+                # Refresh config
+                self.config = self.config_manager.get_config()
         return
 
     def override_save_dir_handler(self, listbox: tk.Listbox):
@@ -631,15 +543,18 @@ class App:
         selected = listbox.curselection()
         assert len(selected) == 1
         target = pathlib.Path(listbox.get(selected[0]))
-        if not target.exists(follow_symlinks=False) or not target.is_dir():
+        
+        # Use SaveManager to validate directory
+        if not self.save_manager.validate_save_directory(str(target)):
             messagebox.showerror("Invalid Path", f"{target} is not a directory.")
             listbox.select_clear()
             return
+        
         # override
         if self.selected_frame:
             frame, game = self.selected_frame
-            game = self.validate_game_directory(game=game)
-            if game["valid"] and self.rebind_symlink(
+            game = self.game_manager.validate_game_directory(game=game)
+            if game["valid"] and self.game_manager.rebind_symlink(
                 link=pathlib.Path(game["save"]), target=pathlib.Path(target)
             ):
                 save_dir_path = frame.nametowidget("save_dir_path")
