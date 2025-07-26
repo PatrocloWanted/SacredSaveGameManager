@@ -9,11 +9,11 @@ The Sacred Save Game Manager is a Tkinter-based GUI application that manages sav
 - [x] Split the monolithic `App` class (~600+ lines) into smaller, focused classes:
   - [x] `GameManager` - Handle game directory operations
   - [x] `SaveManager` - Manage save directory operations  
-  - [ ] `UIManager` - Handle UI components and interactions
+  - [x] `UIManager` - Handle UI components and interactions
   - [x] `ConfigManager` - Manage configuration loading/saving
 - [x] Create proper package structure with separate modules:
   - [x] `models/` - Data structures and business logic
-  - [ ] `views/` - UI components
+  - [x] `views/` - UI components (package structure created)
   - [x] `controllers/` - Application logic
   - [x] `utils/` - Helper functions and utilities
 - [x] Separate file operations, validation logic, and UI code into different modules
