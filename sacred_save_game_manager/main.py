@@ -24,7 +24,8 @@ class App:
         
         try:
             # Log application startup
-            app_logger.log_startup("1.0.0")
+            from .utils import get_version
+            app_logger.log_startup(get_version())
             
             # Log platform information
             log_platform_info()

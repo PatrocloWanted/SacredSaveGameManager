@@ -14,7 +14,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 def test_package_import():
     """Test that the main package can be imported."""
     import sacred_save_game_manager
-    assert sacred_save_game_manager.__version__ == "1.0.0"
+    # Test that version is defined and is a string
+    assert hasattr(sacred_save_game_manager, '__version__')
+    assert isinstance(sacred_save_game_manager.__version__, str)
+    assert len(sacred_save_game_manager.__version__) > 0
     assert sacred_save_game_manager.__author__ == "Patroclo Picchiaduro"
 
 def test_main_function_exists():

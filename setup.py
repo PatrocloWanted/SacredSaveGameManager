@@ -9,7 +9,7 @@ def get_version():
         for line in f:
             if line.startswith('__version__'):
                 return line.split('=')[1].strip().strip('"').strip("'")
-    return "1.0.0"
+    raise RuntimeError("Unable to find version string in sacred_save_game_manager/__init__.py")
 
 # Read long description
 def get_long_description():

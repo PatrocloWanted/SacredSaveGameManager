@@ -17,6 +17,7 @@ from .platform_utils import (
 from .cross_platform_symlinks import (
     get_symlink_manager, CrossPlatformSymlinkManager, LinkType
 )
+from .version import get_version, get_version_info, get_full_version_string, VERSION
 
 __all__ = [
     # Logger
@@ -32,5 +33,7 @@ __all__ = [
     'get_platform_info', 'get_cross_platform_paths', 'get_game_executables', 'log_platform_info',
     'PlatformInfo', 'CrossPlatformPaths', 'GameExecutables',
     # Cross-platform symlinks
-    'get_symlink_manager', 'CrossPlatformSymlinkManager', 'LinkType'
+    'get_symlink_manager', 'CrossPlatformSymlinkManager', 'LinkType',
+    # Version utilities
+    'get_version', 'get_version_info', 'get_full_version_string', 'VERSION'
 ]
