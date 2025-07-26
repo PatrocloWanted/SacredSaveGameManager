@@ -28,6 +28,10 @@ class UIManager:
         self.scrollable_frame: Optional[ttk.Frame] = None
         self.style: Optional[ttk.Style] = None
         
+        # Button references for state management
+        self.undo_button: Optional[ttk.Button] = None
+        self.redo_button: Optional[ttk.Button] = None
+        
         # Event handlers (to be set by App)
         self.add_game_handler: Optional[Callable] = None
         self.remove_game_handler: Optional[Callable] = None
@@ -35,6 +39,8 @@ class UIManager:
         self.add_save_dir_handler: Optional[Callable] = None
         self.remove_save_dir_handler: Optional[Callable] = None
         self.override_save_dir_handler: Optional[Callable] = None
+        self.undo_handler: Optional[Callable] = None
+        self.redo_handler: Optional[Callable] = None
     
     def setup_main_window(self) -> None:
         """Initialize the main window with title and minimum size."""
@@ -119,7 +125,7 @@ class UIManager:
         label = tk.Label(toolbar, text="Game Directories", font=("Arial", 14, "bold"))
         label.pack(side=tk.LEFT, padx=2, pady=2)
         
-        # Remove button
+        # Game Management buttons (right side)
         remove_button = ttk.Button(
             toolbar,
             text="Remove",
@@ -129,7 +135,6 @@ class UIManager:
         remove_button.pack(side=tk.RIGHT, padx=2, pady=2)
         self.add_tooltip(remove_button, "Remove the selected Sacred Gold entry.")
         
-        # Reset button
         reset_button = ttk.Button(
             toolbar,
             text="Reset",
@@ -139,7 +144,6 @@ class UIManager:
         reset_button.pack(side=tk.RIGHT, padx=2, pady=2)
         self.add_tooltip(reset_button, "Reset to the default save directory.")
         
-        # Add button
         add_button = ttk.Button(
             toolbar, 
             text="Add", 
@@ -148,6 +152,31 @@ class UIManager:
         )
         add_button.pack(side=tk.RIGHT, padx=2, pady=2)
         self.add_tooltip(add_button, "Add a new Sacred Gold entry.")
+        
+        # Visual separator
+        separator_frame = tk.Frame(toolbar, width=2, bg="gray")
+        separator_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=8, pady=4)
+        
+        # Operation History buttons (right side, after separator)
+        self.redo_button = ttk.Button(
+            toolbar,
+            text="Redo",
+            command=self.redo_handler,
+            style="Toolbar.TButton",
+            state=tk.DISABLED
+        )
+        self.redo_button.pack(side=tk.RIGHT, padx=2, pady=2)
+        self.add_tooltip(self.redo_button, "Redo the last undone Override/Reset operation (reverts save directory changes)")
+        
+        self.undo_button = ttk.Button(
+            toolbar,
+            text="Undo",
+            command=self.undo_handler,
+            style="Toolbar.TButton",
+            state=tk.DISABLED
+        )
+        self.undo_button.pack(side=tk.RIGHT, padx=2, pady=2)
+        self.add_tooltip(self.undo_button, "Undo the last Override/Reset operation (reverts save directory changes)")
         
         # Separator
         separator = ttk.Separator(parent, orient="horizontal")
@@ -442,15 +471,24 @@ class UIManager:
         # Clear previously selected frame
         if self.selected_frame:
             prev = self.selected_frame[0]
-            prev.config(style="TFrame")
-            for widget in prev.winfo_children():
-                if isinstance(widget, ttk.Label):
-                    if widget.winfo_name() == "game_name":
-                        widget.config(style="GameFrame.Name.TLabel")
-                    elif widget.winfo_name() == "save_dir_path":
-                        widget.config(style="GameFrame.Path.TLabel")
-                    else:
-                        widget.config(style="TLabel")
+            try:
+                # Check if the widget still exists before trying to configure it
+                if prev.winfo_exists():
+                    prev.config(style="TFrame")
+                    for widget in prev.winfo_children():
+                        if isinstance(widget, ttk.Label):
+                            if widget.winfo_name() == "game_name":
+                                widget.config(style="GameFrame.Name.TLabel")
+                            elif widget.winfo_name() == "save_dir_path":
+                                widget.config(style="GameFrame.Path.TLabel")
+                            else:
+                                widget.config(style="TLabel")
+                else:
+                    # Widget no longer exists, clear the reference
+                    self.selected_frame = None
+            except tk.TclError:
+                # Widget was destroyed, clear the reference
+                self.selected_frame = None
         
         if self.selected_frame != (frame, game):
             # Select frame
@@ -467,3 +505,11 @@ class UIManager:
             self.selected_frame = (frame, game)
         else:
             self.selected_frame = None
+    
+    def update_undo_redo_button_states(self, can_undo: bool, can_redo: bool) -> None:
+        """Update the enabled/disabled state of undo/redo buttons."""
+        if self.undo_button:
+            self.undo_button.config(state=tk.NORMAL if can_undo else tk.DISABLED)
+        
+        if self.redo_button:
+            self.redo_button.config(state=tk.NORMAL if can_redo else tk.DISABLED)

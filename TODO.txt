@@ -168,8 +168,8 @@ The Sacred Save Game Manager has undergone significant improvements and is now a
 #### Medium Priority:
 - [ ] **Icons and Theming**: Visual design improvements
 - [ ] **Dark/Light Themes**: Theme support
-- [ ] **Status Bar**: Operation feedback and progress
-- [ ] **Undo/Redo**: Operation history and reversal
+- [x] **Status Bar**: Operation feedback and progress ✅ **COMPLETED**
+- [x] **Undo/Redo**: Operation history and reversal ✅ **COMPLETED**
 
 ### 10. Performance & Scalability
 **Priority**: Medium - Optimization for large collections
