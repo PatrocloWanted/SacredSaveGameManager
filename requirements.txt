@@ -1,2 +1,9 @@
-Pygments==2.19.1
-rich==13.9.4
+# Sacred Save Game Manager Dependencies
+# 
+# This application uses only Python standard library modules for core functionality.
+# Platform-specific dependencies are handled as optional extras in setup.py.
+#
+# For Windows users, install with: pip install sacred-save-game-manager[windows]
+# For development, install with: pip install sacred-save-game-manager[dev]
+
+# No core dependencies required - application uses only Python standard library

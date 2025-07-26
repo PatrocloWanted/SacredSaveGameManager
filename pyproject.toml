@@ -1,2 +1,149 @@
-[tool.poetry.dependencies]
-python = "^3.13"
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sacred-save-game-manager"
+dynamic = ["version"]
+description = "A cross-platform save game manager for Sacred Gold"
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "Patroclo Picchiaduro", email = "patroclo.picchiaduro.25@gmail.com"}
+]
+maintainers = [
+    {name = "Patroclo Picchiaduro", email = "patroclo.picchiaduro.25@gmail.com"}
+]
+keywords = ["sacred", "gold", "save", "game", "manager", "symlink", "backup", "gaming"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Games/Entertainment",
+    "Topic :: System :: Archiving :: Backup",
+    "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Environment :: X11 Applications :: GTK",
+    "Natural Language :: English",
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.optional-dependencies]
+windows = [
+    "pywin32>=227; sys_platform=='win32'",
+]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=21.0",
+    "flake8>=3.8",
+    "mypy>=0.800",
+    "build>=0.7.0",
+    "twine>=3.0.0",
+]
+test = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "pytest-mock>=3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/PatrocloWanted/SacredSaveGameManager"
+Repository = "https://github.com/PatrocloWanted/SacredSaveGameManager"
+"Bug Reports" = "https://github.com/PatrocloWanted/SacredSaveGameManager/issues"
+Documentation = "https://github.com/PatrocloWanted/SacredSaveGameManager#readme"
+
+[project.scripts]
+sacred-save-game-manager = "sacred_save_game_manager.main:main"
+
+[tool.setuptools]
+packages = {find = {}}
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.dynamic]
+version = {attr = "sacred_save_game_manager.__version__"}
+
+[tool.setuptools.package-data]
+sacred_save_game_manager = ["py.typed"]
+
+# Black configuration
+[tool.black]
+line-length = 100
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["sacred_save_game_manager"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

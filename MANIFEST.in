@@ -1,0 +1,50 @@
+# Include documentation and configuration files
+include README.md
+include LICENSE
+include CHANGELOG.md
+include pyproject.toml
+include requirements.txt
+
+# Include documentation files
+include CROSS_PLATFORM_COMPATIBILITY.md
+include ERROR_HANDLING_IMPROVEMENTS.md
+include TODO.txt
+
+# Include all Python files
+recursive-include sacred_save_game_manager *.py
+
+# Include package data
+recursive-include sacred_save_game_manager *.json
+recursive-include sacred_save_game_manager *.txt
+recursive-include sacred_save_game_manager *.md
+
+# Include resources if any
+recursive-include resources *
+
+# Exclude development and build files
+exclude .gitignore
+exclude tox.ini
+exclude .coverage
+exclude .pytest_cache
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.orig
+recursive-exclude * *.rej
+recursive-exclude * .DS_Store
+recursive-exclude * Thumbs.db
+
+# Exclude logs and config files
+exclude config.json
+exclude config.json.backup
+recursive-exclude logs *
+
+# Exclude test files from distribution
+recursive-exclude tests *
+exclude pytest.ini
+exclude .coveragerc
+
+# Exclude IDE files
+recursive-exclude .vscode *
+recursive-exclude .idea *
+exclude *.sublime-workspace
+exclude *.sublime-project

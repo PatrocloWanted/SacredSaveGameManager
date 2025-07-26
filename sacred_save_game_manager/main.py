@@ -273,8 +273,13 @@ class App:
         return
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the Sacred Save Game Manager application."""
     root = tk.Tk()
     root.minsize(800, 700)
     app = App(root)
     root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
