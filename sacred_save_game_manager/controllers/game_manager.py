@@ -6,6 +6,11 @@ from tkinter import messagebox
 from typing import Dict, Any, Optional
 from .config_manager import ConfigManager
 from ..models import GameData
+from ..utils import (
+    get_logger, log_operation, log_error, log_warning,
+    get_platform_info, get_game_executables, get_symlink_manager,
+    GameDirectoryError, SymlinkError, ValidationError
+)
 
 
 class GameManager:
@@ -16,6 +21,12 @@ class GameManager:
     
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
+        self.logger = get_logger("game_manager")
+        self.platform_info = get_platform_info()
+        self.game_executables = get_game_executables()
+        self.symlink_manager = get_symlink_manager()
+        
+        self.logger.info("GameManager initialized")
     
     def validate_game_directory(self, game: GameData) -> GameData:
         """Validate and setup game directory with proper save/backup structure."""
@@ -87,17 +98,36 @@ class GameManager:
         return None
     
     def rebind_symlink(self, link: pathlib.Path, target: pathlib.Path) -> bool:
-        """Rebind a symlink to point to a new target."""
-        assert target.exists(follow_symlinks=False) and target.is_dir()
+        """Rebind a symlink to point to a new target using cross-platform methods."""
         try:
-            if link.exists(follow_symlinks=False):
-                assert link.is_symlink()
-                link.unlink(missing_ok=True)
-            link.symlink_to(target=target, target_is_directory=True)
-            return True
-        except OSError as e:
-            messagebox.showerror("Error", f"Failed to rebind symlink: {e}")
-        return False
+            # Validate target exists and is a directory
+            if not target.exists(follow_symlinks=False) or not target.is_dir():
+                raise SymlinkError(f"Target is not a valid directory: {target}")
+            
+            # Use cross-platform symlink manager
+            success, link_type, details = self.symlink_manager.rebind_link(
+                str(link), str(target), force=True
+            )
+            
+            if success:
+                self.logger.info(f"Successfully rebound link using {link_type}: {link} -> {target}")
+                log_operation("rebind_symlink", {
+                    "link": str(link),
+                    "target": str(target),
+                    "link_type": link_type,
+                    "platform": self.platform_info.system
+                })
+                return True
+            else:
+                error_msg = details.get("error", "Unknown error")
+                self.logger.error(f"Failed to rebind symlink: {error_msg}")
+                messagebox.showerror("Symlink Error", f"Failed to rebind symlink: {error_msg}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Exception in rebind_symlink: {str(e)}")
+            messagebox.showerror("Error", f"Failed to rebind symlink: {str(e)}")
+            return False
     
     def get_game_symlink_target(self, game: GameData) -> str:
         """Get the target path of the game's save symlink."""
@@ -113,13 +143,12 @@ class GameManager:
     
     def is_valid_game_directory(self, path: str) -> bool:
         """Check if a directory is a valid Sacred Gold installation."""
-        if os.path.islink(path):
+        try:
+            # Use cross-platform game validation
+            return self.game_executables.is_valid_game_directory(path)
+        except Exception as e:
+            self.logger.error(f"Error validating game directory {path}: {str(e)}")
             return False
-        if not os.path.isdir(path):
-            return False
-        if not os.path.isfile(os.path.join(path, "Sacred.exe")):
-            return False
-        return True
     
     def validate_all_games(self) -> None:
         """Validate all games in configuration and update them."""

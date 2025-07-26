@@ -10,7 +10,8 @@ from .models import GameData
 from .utils import (
     get_logger, log_user_action, log_error, app_logger,
     validate_game_path, sanitize_name, ValidationError,
-    ConfigurationError, GameDirectoryError, FileOperationError
+    ConfigurationError, GameDirectoryError, FileOperationError,
+    log_platform_info, get_platform_info
 )
 
 
@@ -24,6 +25,9 @@ class App:
         try:
             # Log application startup
             app_logger.log_startup("1.0.0")
+            
+            # Log platform information
+            log_platform_info()
             
             # Initialize managers
             self.logger.info("Initializing application managers...")

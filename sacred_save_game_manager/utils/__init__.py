@@ -10,6 +10,13 @@ from .validators import (
     validate_game_path, validate_save_path, sanitize_name, check_system_requirements,
     PathValidator, NameValidator, GameValidator, SystemValidator
 )
+from .platform_utils import (
+    get_platform_info, get_cross_platform_paths, get_game_executables, log_platform_info,
+    PlatformInfo, CrossPlatformPaths, GameExecutables
+)
+from .cross_platform_symlinks import (
+    get_symlink_manager, CrossPlatformSymlinkManager, LinkType
+)
 
 __all__ = [
     # Logger
@@ -20,5 +27,10 @@ __all__ = [
     'CorruptedDataError', 'NetworkError', 'SystemLimitError',
     # Validators
     'validate_game_path', 'validate_save_path', 'sanitize_name', 'check_system_requirements',
-    'PathValidator', 'NameValidator', 'GameValidator', 'SystemValidator'
+    'PathValidator', 'NameValidator', 'GameValidator', 'SystemValidator',
+    # Platform utilities
+    'get_platform_info', 'get_cross_platform_paths', 'get_game_executables', 'log_platform_info',
+    'PlatformInfo', 'CrossPlatformPaths', 'GameExecutables',
+    # Cross-platform symlinks
+    'get_symlink_manager', 'CrossPlatformSymlinkManager', 'LinkType'
 ]
