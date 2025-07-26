@@ -9,10 +9,10 @@ description = "A cross-platform save game manager for Sacred Gold"
 readme = "README.md"
 license = "MIT"
 authors = [
-    {name = "Patroclo Picchiaduro", email = "patroclo.picchiaduro.25@gmail.com"}
+    {name = "Patroclo Picchiaduro", email = "patroclo.wanted@gmail.com"}
 ]
 maintainers = [
-    {name = "Patroclo Picchiaduro", email = "patroclo.picchiaduro.25@gmail.com"}
+    {name = "Patroclo Picchiaduro", email = "patroclo.wanted@gmail.com"}
 ]
 keywords = ["sacred", "gold", "save", "game", "manager", "symlink", "backup", "gaming"]
 classifiers = [

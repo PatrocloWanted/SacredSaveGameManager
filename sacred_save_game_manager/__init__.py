@@ -7,7 +7,7 @@ to manage multiple save directories efficiently.
 
 __version__ = "1.0.0"
 __author__ = "Patroclo Picchiaduro"
-__email__ = "patroclo.picchiaduro.25@gmail.com"
+__email__ = "patroclo.wanted@gmail.com"
 __description__ = "A cross-platform save game manager for Sacred Gold"
 
 # Make main function available at package level

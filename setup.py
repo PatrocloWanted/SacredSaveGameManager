@@ -25,7 +25,7 @@ setup(
     name="sacred-save-game-manager",
     version=get_version(),
     author="Patroclo Picchiaduro",
-    author_email="patroclo.picchiaduro.25@gmail.com",
+    author_email="patroclo.wanted@gmail.com",
     description="A cross-platform save game manager for Sacred Gold",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
